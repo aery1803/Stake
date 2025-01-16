@@ -9,17 +9,17 @@ const generateRandomArrays = ({ length, min = 1.01, max }) => {
 };
 
 const multipliers = [
-  ...generateRandomArrays({ length: 160, max: 2 }),
-  ...generateRandomArrays({ length: 100, max: 5 }),
-  ...generateRandomArrays({ length: 40, max: 20 }),
-  ...generateRandomArrays({ length: 25, max: 100 }),
+  ...generateRandomArrays({ length: 10, max: 500000 }),
   ...generateRandomArrays({ length: 15, max: 3000 }),
-  ...generateRandomArrays({ length: 10, max: 100000 }),
+  ...generateRandomArrays({ length: 20, max: 100 }),
+  ...generateRandomArrays({ length: 45, max: 20 }),
+  ...generateRandomArrays({ length: 100, max: 5 }),
+  ...generateRandomArrays({ length: 160, max: 2 }),
 ];
 
 const amountPerBet = [
-  ...generateRandomArrays({ length: 250, min: 0.1, max: 0.5 }),
   ...generateRandomArrays({ length: 100, min: 0.05, max: 0.25 }),
+  ...generateRandomArrays({ length: 250, min: 0.1, max: 0.5 }),
 ];
 
 let betPlayed = [];

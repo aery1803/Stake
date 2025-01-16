@@ -6,7 +6,7 @@ const generateRandomBet = ({ min, max, float }) => {
 const generate = () => [
   generateRandomBet({
     min: 1,
-    max: [7, 9, 11, 13].includes(Math.floor(Math.random() * 15) + 1) ? 15 : 5,
+    max: [7, 11, 13].includes(Math.floor(Math.random() * 15) + 1) ? 15 : 5,
   }),
   generateRandomBet({ min: 0.1, max: 0.5, float: true }),
 ];
