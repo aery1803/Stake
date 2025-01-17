@@ -1,3 +1,7 @@
+const number = (number) => {
+  return Number(number.toFixed(2));
+};
+
 const generateIdentifier = (length) => {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -27,7 +31,7 @@ const generateIdentifier = (length) => {
 
 const generateRandomBet = ({ min, max, float = true }) => {
   const randomNumber = Math.random() * (max - min) + min;
-  return float ? Number(randomNumber.toFixed(6)) : Math.ceil(randomNumber);
+  return float ? number(randomNumber) : Math.ceil(randomNumber);
 };
 
 const recursiveMultiplier = (levels, index = 0) => {
@@ -52,13 +56,12 @@ const randomMultiplier = (levels) => {
   return generateRandomBet(recursiveMultiplier(levels));
 };
 
-const generate = () => [
-  randomMultiplier([1.1, 9, 50, 100, 1000, 9900]),
-  generateRandomBet({ min: 0.1, max: 0.5 }),
-];
-
 const executeBets = async () => {
-  const [target, amount] = generate();
+  const target = randomMultiplier([1.1, 5, 9, 50, 1000, 9900]);
+  const amount =
+    target > 3
+      ? generateRandomBet({ min: 0.1, max: 0.5 })
+      : generateRandomBet({ min: 0.5, max: 0.99 });
   const condition =
     generateRandomBet({ min: 0, max: 2, float: false }) > 1 ? "below" : "above";
 
@@ -111,18 +114,17 @@ let betResponse = [];
 const printResult = (data) => {
   const updatedBetResponse = [...betResponse, data];
   const betsWin = updatedBetResponse.filter((bet) => bet.active).length;
-  const winRate = Number(
-    ((betsWin / updatedBetResponse.length) * 100).toFixed(2)
+  const winRate = number((betsWin / updatedBetResponse.length) * 100);
+  const totalAmount = number(
+    updatedBetResponse?.reduce((acc, bet) => acc + bet.amount, 0)
   );
-  const totalAmount = Number(
-    updatedBetResponse?.reduce((acc, bet) => acc + bet.amount, 0).toFixed(2)
+  const winningAmount = number(
+    updatedBetResponse?.reduce(
+      (acc, bet) => (bet.active ? acc + bet.payout : acc),
+      0
+    )
   );
-  const winningAmount = Number(
-    updatedBetResponse
-      ?.reduce((acc, bet) => (bet.active ? acc + bet.payout : acc), 0)
-      .toFixed(2)
-  );
-  const netWinning = Number((winningAmount - totalAmount).toFixed(2));
+  const netWinning = number(winningAmount - totalAmount);
   console.clear();
   console.log("--------------------");
   console.log("Total Bets : ", updatedBetResponse.length);
@@ -137,8 +139,8 @@ const printResult = (data) => {
   console.log("Net Winning : ", netWinning);
   console.log("-------------");
   console.log("Recent Bet : ");
-  console.log("----Amount : ", Number(data.amount.toFixed(2)));
-  console.log("----Winning : ", Number(data.payout.toFixed(2)));
+  console.log("----Amount : ", number(data.amount));
+  console.log("----Winning : ", number(data.payout));
   console.log("----Target : ", data.target);
   console.log("----Result : ", data.active ? "Win" : "Lose");
   betResponse = [...updatedBetResponse];
@@ -149,7 +151,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 1000, max: 5000 });
+    const randomDelay = generateRandomBet({ min: 1000, max: 3000 });
     timeoutId = setTimeout(() => {
       callback();
       start();
