@@ -48,21 +48,24 @@ const recursiveMultiplier = (levels, index = 0) => {
   };
 };
 
-const randomMultiplier = (levels, float) => {
-  return generateRandomBet({ ...recursiveMultiplier(levels), float });
+const randomMultiplier = (levels) => {
+  return generateRandomBet(recursiveMultiplier(levels));
 };
 
 const generate = () => [
-  randomMultiplier([3, 9, 15], false),
+  randomMultiplier([1.1, 9, 50, 100, 1000, 9900]),
   generateRandomBet({ min: 0.1, max: 0.5 }),
 ];
 
 const executeBets = async () => {
-  const [pump, amount] = generate();
+  const [target, amount] = generate();
+  const condition =
+    generateRandomBet({ min: 0, max: 2, float: false }) > 1 ? "below" : "above";
+
   const response = await fetch("https://stake.ac/_api/graphql", {
     headers: {
       accept: "*/*",
-      "accept-language": "en-US,en;q=0.7",
+      "accept-language": "en-US,en;q=0.9",
       "content-type": "application/json",
       priority: "u=1, i",
       "sec-ch-ua": '"Not A(Brand";v="8", "Chromium";v="132", "Brave";v="132"',
@@ -82,17 +85,17 @@ const executeBets = async () => {
         "e7fd5123465a5169b13ece91f936ae89cd02bf54db1e8d345ad6e1cfe40402ed24be09c2edc085573eb9361284c23492",
       "x-lockdown-token": "s5MNWtjTM5TvCMkAzxov",
     },
-    referrer: "https://stake.ac/casino/games/pump",
+    referrer: "https://stake.ac/casino/games/dice",
     referrerPolicy: "strict-origin-when-cross-origin",
     body: JSON.stringify({
       query:
-        "mutation PumpBet($amount: Float!, $difficulty: CasinoGamePumpDifficultyEnum!, $currency: CurrencyEnum!, $identifier: String, $round: Int!) {\n  pumpBet(\n    amount: $amount\n    difficulty: $difficulty\n    currency: $currency\n    identifier: $identifier\n    round: $round\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGamePump\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGamePump on CasinoGamePump {\n  difficulty\n  payoutMultiplier\n  round\n}\n",
+        "mutation DiceRoll($amount: Float!, $target: Float!, $condition: CasinoGameDiceConditionEnum!, $currency: CurrencyEnum!, $identifier: String!) {\n  diceRoll(\n    amount: $amount\n    target: $target\n    condition: $condition\n    currency: $currency\n    identifier: $identifier\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGameDice\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGameDice on CasinoGameDice {\n  result\n  target\n  condition\n}\n",
       variables: {
-        amount: amount,
-        currency: "inr",
+        target,
+        condition,
         identifier: generateIdentifier(21),
-        round: pump,
-        difficulty: "expert",
+        amount,
+        currency: "inr",
       },
     }),
     method: "POST",
@@ -100,8 +103,8 @@ const executeBets = async () => {
     credentials: "include",
   });
   const data = await response.json();
-  const payout = data?.data?.pumpBet?.payout || 0;
-  return { pump, amount, payout, active: payout > 0 };
+  const payout = data?.data?.diceRoll?.payout || 0;
+  return { target, amount, payout, active: payout > 0 };
 };
 
 let betResponse = [];
@@ -135,7 +138,7 @@ const printResult = (data) => {
   console.log("-------------");
   console.log("Recent Bet : ");
   console.log("----Amount : ", Number(data.amount.toFixed(2)));
-  console.log("----Pump : ", data.pump);
+  console.log("----Target : ", data.target);
   console.log("----Result : ", data.active ? "Win" : "Lose");
   betResponse = [...updatedBetResponse];
   return netWinning;
