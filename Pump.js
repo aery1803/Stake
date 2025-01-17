@@ -138,7 +138,7 @@ let highestBet = {
   payout: 0,
 };
 
-const printResult = ({ active, payout, amount, target }) => {
+const printResult = ({ active, payout, amount, target, difficulty }) => {
   const totalBets = betDetails.totalBets + 1;
   const betsWin = betDetails.betsWin + (active ? 1 : 0);
   const betsLose = totalBets - betsWin;
@@ -169,11 +169,11 @@ const printResult = ({ active, payout, amount, target }) => {
   console.log("Net Winning : ", netWinning);
   console.log("-------------");
   console.log("Recent Bet : ");
-  console.log("----Amount : ", number(data.amount));
-  console.log("----Winning : ", number(data.payout));
-  console.log("----Target : ", data.target);
-  console.log("----Difficulty : ", data.difficulty);
-  console.log("----Result : ", data.active ? "Win" : "Lose");
+  console.log("----Amount : ", number(amount));
+  console.log("----Winning : ", number(payout));
+  console.log("----Target : ", target);
+  console.log("----Difficulty : ", difficulty);
+  console.log("----Result : ", active ? "Win" : "Lose");
   console.log("-------------");
   console.log("Highest Bet : ");
   console.log("----Amount : ", highestBet.amount);
@@ -187,7 +187,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 750, max: 1500 });
+    const randomDelay = generateRandomBet({ min: 1000, max: 5000 });
     timeoutId = setTimeout(() => {
       callback();
       start();

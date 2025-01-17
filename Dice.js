@@ -152,7 +152,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 750, max: 1500 });
+    const randomDelay = generateRandomBet({ min: 1000, max: 5000 });
     timeoutId = setTimeout(() => {
       callback();
       start();
