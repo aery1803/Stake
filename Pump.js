@@ -135,6 +135,7 @@ const printResult = (data) => {
   console.log("-------------");
   console.log("Recent Bet : ");
   console.log("----Amount : ", Number(data.amount.toFixed(2)));
+  console.log("----Winning : ", Number(data.payout.toFixed(2)));
   console.log("----Pump : ", data.pump);
   console.log("----Result : ", data.active ? "Win" : "Lose");
   betResponse = [...updatedBetResponse];
