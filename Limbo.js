@@ -52,8 +52,8 @@ const recursiveMultiplier = (levels, index = 0) => {
   };
 };
 
-const randomMultiplier = (levels) => {
-  return generateRandomBet(recursiveMultiplier(levels));
+const randomMultiplier = (levels, float = true) => {
+  return generateRandomBet({ ...recursiveMultiplier(levels), float });
 };
 
 const executeBets = async () => {

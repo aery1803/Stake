@@ -34,28 +34,6 @@ const generateRandomBet = ({ min, max, float = true }) => {
   return float ? number(randomNumber) : Math.ceil(randomNumber);
 };
 
-const recursiveMultiplier = (levels, index = 0) => {
-  if (index >= levels.length - 1) {
-    return { min: levels[index], max: levels[index] };
-  }
-
-  const nextMultiplier = recursiveMultiplier(levels, index + 1);
-
-  return {
-    min: levels[index],
-    max: generateRandomBet({
-      min: 1.1,
-      max: [7, 9, 11, 13, 18].includes(Math.floor(Math.random() * 20) + 1)
-        ? nextMultiplier.max
-        : nextMultiplier.min,
-    }),
-  };
-};
-
-const randomMultiplier = (levels) => {
-  return generateRandomBet(recursiveMultiplier(levels));
-};
-
 const executeBets = async () => {
   const target = generateRandomBet({ min: 0.01, max: 99.99 });
   const amount =

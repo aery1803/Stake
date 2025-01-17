@@ -1,4 +1,31 @@
-const identifier = "";
+const generateIdentifier = (length) => {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const specialCharacters = "_-";
+  let result = "";
+  let specialCharAdded = false;
+
+  for (let i = 0; i < length; i++) {
+    if (
+      !specialCharAdded &&
+      i < length / 2 &&
+      Math.random() < 1 / (length - i)
+    ) {
+      result += specialCharacters.charAt(
+        Math.floor(Math.random() * specialCharacters.length)
+      );
+      specialCharAdded = true;
+    } else {
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
+    }
+  }
+
+  return result;
+};
+
+const identifier = generateIdentifier(21);
 
 const generateRandomArrays = ({ length, min = 1.01, max }) => {
   const arr = [];
