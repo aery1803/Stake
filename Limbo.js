@@ -57,11 +57,11 @@ const randomMultiplier = (levels) => {
 };
 
 const executeBets = async () => {
-  const multiplierTarget = randomMultiplier([1.1, 5, 9, 50, 1000, 9900]);
+  const target = randomMultiplier([2, 7, 50, 1000, 1000000]);
   const amount =
-    multiplierTarget > 3
+    target > 3
       ? generateRandomBet({ min: 0.1, max: 0.5 })
-      : generateRandomBet({ min: 0.5, max: 0.99 });
+      : generateRandomBet({ min: 0.4, max: 0.99 });
 
   const response = await fetch("https://stake.ac/_api/graphql", {
     headers: {
@@ -92,7 +92,7 @@ const executeBets = async () => {
       query:
         "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n  limboBet(\n    amount: $amount\n    currency: $currency\n    multiplierTarget: $multiplierTarget\n    identifier: $identifier\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n  result\n  multiplierTarget\n}\n",
       variables: {
-        multiplierTarget,
+        multiplierTarget: target,
         identifier: generateIdentifier(21),
         amount,
         currency: "inr",
@@ -104,41 +104,46 @@ const executeBets = async () => {
   });
   const data = await response.json();
   const payout = number(data?.data?.limboBet?.payout) || 0;
-  return { multiplierTarget, amount, payout, active: payout > 0 };
+  return { target, amount, payout, active: payout > 0 };
 };
 
-let betResponse = {};
+let betDetails = {
+  totalBets: 0,
+  betsWin: 0,
+  betsLose: 0,
+  totalAmount: 0,
+  winningAmount: 0,
+};
+
 let highestBet = {
-  multiplier: 0,
+  target: 0,
   amount: 0,
   payout: 0,
 };
 
-const printResult = (data) => {
-  const updatedBetResponse = [...betResponse, data];
-  const betsWin = updatedBetResponse.filter((bet) => bet.active).length;
-  const winRate = number((betsWin / updatedBetResponse.length) * 100);
-  const totalAmount = number(
-    updatedBetResponse?.reduce((acc, bet) => acc + bet.amount, 0)
-  );
-  if (data.payout > highestBet.amount) {
-    highestBet.multiplier = data.multiplierTarget;
-    highestBet.amount = data.amount;
-    highestBet.payout = data.payout;
-  }
+const printResult = ({ active, payout, amount, target }) => {
+  const totalBets = betDetails.totalBets + 1;
+  const betsWin = betDetails.betsWin + (active ? 1 : 0);
+  const betsLose = totalBets - betsWin;
+  const totalAmount = number(betDetails.totalAmount + amount);
   const winningAmount = number(
-    updatedBetResponse?.reduce(
-      (acc, bet) => (bet.active ? acc + bet.payout : acc),
-      0
-    )
+    betDetails.winningAmount + (active ? payout : 0)
   );
+  const winRate = number((betsWin / totalBets) * 100);
   const netWinning = number(winningAmount - totalAmount);
+
+  betDetails = { totalBets, betsWin, betsLose, totalAmount, winningAmount };
+  if (payout > highestBet.payout) {
+    highestBet.target = target;
+    highestBet.amount = amount;
+    highestBet.payout = number(payout);
+  }
   console.clear();
   console.log("--------------------");
-  console.log("Total Bets : ", updatedBetResponse.length);
+  console.log("Total Bets : ", totalBets);
   console.log("--------------------");
   console.log("Bets Win : ", betsWin);
-  console.log("Bets Lose : ", updatedBetResponse.length - betsWin);
+  console.log("Bets Lose : ", totalBets - betsWin);
   console.log("Win Rate : ", winRate, "%");
   console.log("--------------------");
   console.log("Total Amount : ", totalAmount);
@@ -147,17 +152,16 @@ const printResult = (data) => {
   console.log("Net Winning : ", netWinning);
   console.log("-------------");
   console.log("Recent Bet : ");
-  console.log("----Amount : ", data.amount);
-  console.log("----Target : ", data.multiplierTarget);
-  console.log("----Winning : ", number(data.payout));
-  console.log("----Result : ", data.active ? "Win" : "Lose");
+  console.log("----Amount : ", amount);
+  console.log("----Target : ", target);
+  console.log("----Winning : ", number(payout));
+  console.log("----Result : ", active ? "Win" : "Lose");
   console.log("-------------");
   console.log("Highest Bet : ");
   console.log("----Amount : ", highestBet.amount);
   console.log("----Target : ", highestBet.target);
   console.log("----Winning : ", highestBet.payout);
   console.log("-------------");
-  betResponse = [...updatedBetResponse];
   return netWinning;
 };
 
@@ -165,7 +169,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 500, max: 1000 });
+    const randomDelay = generateRandomBet({ min: 750, max: 1500 });
     timeoutId = setTimeout(() => {
       callback();
       start();

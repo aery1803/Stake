@@ -57,7 +57,7 @@ const randomMultiplier = (levels) => {
 };
 
 const executeBets = async () => {
-  const target = generateRandomBet({ min: 0.01, max: 99.99 });
+  const target = generateRandomBet({ min: 1, max: 20, float: false });
   const amount =
     target > 3
       ? generateRandomBet({ min: 0.1, max: 0.5 })
@@ -89,26 +89,27 @@ const executeBets = async () => {
         "e7fd5123465a5169b13ece91f936ae89cd02bf54db1e8d345ad6e1cfe40402ed24be09c2edc085573eb9361284c23492",
       "x-lockdown-token": "s5MNWtjTM5TvCMkAzxov",
     },
-    referrer: "https://stake.ac/casino/games/dice",
+    referrer: "https://stake.ac/casino/games/tome-of-life",
     referrerPolicy: "strict-origin-when-cross-origin",
     body: JSON.stringify({
       query:
-        "mutation DiceRoll($amount: Float!, $target: Float!, $condition: CasinoGameDiceConditionEnum!, $currency: CurrencyEnum!, $identifier: String!) {\n  diceRoll(\n    amount: $amount\n    target: $target\n    condition: $condition\n    currency: $currency\n    identifier: $identifier\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGameDice\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGameDice on CasinoGameDice {\n  result\n  target\n  condition\n}\n",
+        "mutation TomeOfLifeBet($amount: Float!, $lines: Int!, $currency: CurrencyEnum!, $identifier: String!) {\n  slotsTomeOfLifeBet(\n    amount: $amount\n    currency: $currency\n    lines: $lines\n    identifier: $identifier\n  ) {\n    ...CasinoBet\n    state {\n      ...TomeOfLifeStateFragment\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment TomeOfLifeStateFragment on CasinoGameSlotsTomeOfLife {\n  lines\n  rounds {\n    amount\n    offsets\n    paylines {\n      payline\n      hits\n      multiplier\n      symbol\n    }\n    scatterMultiplier\n    roundMultiplier\n    totalMultiplier\n    bonusRemaining\n    bonusTotal\n  }\n}\n",
       variables: {
-        target,
-        condition,
-        identifier: generateIdentifier(21),
-        amount,
         currency: "inr",
+        amount,
+        lines: target,
+        identifier: generateIdentifier(21),
       },
     }),
     method: "POST",
     mode: "cors",
     credentials: "include",
   });
+
   const data = await response.json();
-  const payout = number(data?.data?.diceRoll?.payout) || 0;
-  const payoutMultiplier = number(data?.data?.diceRoll?.payoutMultiplier) || 0;
+  const payout = number(data?.data?.slotsTomeOfLifeBet?.payout) || 0;
+  const payoutMultiplier =
+    number(data?.data?.slotsTomeOfLifeBet?.payoutMultiplier) || 0;
   return { target: payoutMultiplier, amount, payout, active: payout > 0 };
 };
 
