@@ -1,3 +1,37 @@
+const headers = {
+  accept: "*/*",
+  "accept-language": "en-US,en;q=0.5",
+  "content-type": "application/json",
+  priority: "u=1, i",
+  "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+  "sec-ch-ua-arch": '"x86"',
+  "sec-ch-ua-bitness": '"64"',
+  "sec-ch-ua-full-version-list":
+    '"Brave";v="131.0.0.0", "Chromium";v="131.0.0.0", "Not_A Brand";v="24.0.0.0"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-model": '""',
+  "sec-ch-ua-platform": '"Windows"',
+  "sec-ch-ua-platform-version": '"10.0.0"',
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "sec-gpc": "1",
+  "x-access-token": getCookie("session"),
+  cookie: document.cookie,
+};
+
+function getCookie(name) {
+  const cookiesString = document.cookie;
+  const cookies = cookiesString.split("; ");
+  for (let cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.split("=");
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue);
+    }
+  }
+  return null;
+}
+
 const generateIdentifier = (length) => {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -59,29 +93,7 @@ const executeBets = async () => {
         new Promise((resolve) =>
           setTimeout(() => {
             fetch("https://stake.ac/_api/graphql", {
-              headers: {
-                accept: "*/*",
-                "accept-language": "en-US,en;q=0.5",
-                "content-type": "application/json",
-                priority: "u=1, i",
-                "sec-ch-ua":
-                  '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-                "sec-ch-ua-arch": '"x86"',
-                "sec-ch-ua-bitness": '"64"',
-                "sec-ch-ua-full-version-list":
-                  '"Brave";v="131.0.0.0", "Chromium";v="131.0.0.0", "Not_A Brand";v="24.0.0.0"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-model": '""',
-                "sec-ch-ua-platform": '"Windows"',
-                "sec-ch-ua-platform-version": '"10.0.0"',
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-origin",
-                "sec-gpc": "1",
-                "x-access-token":
-                  "4ef5ed7fb67e30e1050e24779114cfdbd52cda62d922e1cd08de4b6a34d77349e1b95b2b53a3796e12fefa0cf79509b7",
-                "x-lockdown-token": "s5MNWtjTM5TvCMkAzxov",
-              },
+              headers,
               referrer: "https://stake.ac/casino/games/slide",
               referrerPolicy: "strict-origin-when-cross-origin",
               method: "POST",
