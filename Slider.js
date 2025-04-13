@@ -70,18 +70,19 @@ const generateRandomArrays = ({ length, min = 1.01, max }) => {
 };
 
 const multipliers = [
-  ...generateRandomArrays({ length: 160, max: 2 }),
-  ...generateRandomArrays({ length: 100, max: 4 }),
-  ...generateRandomArrays({ length: 40, max: 10 }),
-  ...generateRandomArrays({ length: 50, max: 20 }),
+  ...generateRandomArrays({ length: 150, max: 2.5 }),
+  ...generateRandomArrays({ length: 60, max: 3.5 }),
+  ...generateRandomArrays({ length: 60, max: 5 }),
+  ...generateRandomArrays({ length: 60, max: 10 }),
+  ...generateRandomArrays({ length: 20, max: 20 }),
   // ...generateRandomArrays({ length: 20, max: 100 }),
   // ...generateRandomArrays({ length: 15, max: 3000 }),
   // ...generateRandomArrays({ length: 10, max: 100000 }),
 ];
 
 const amountPerBet = [
-  ...generateRandomArrays({ length: 250, min: 0.15, max: 0.4 }),
-  ...generateRandomArrays({ length: 100, min: 0.05, max: 0.15 }),
+  ...generateRandomArrays({ length: 250, min: 0.015, max: 0.04 }),
+  ...generateRandomArrays({ length: 100, min: 0.005, max: 0.015 }),
 ];
 
 let betPlayed = [];
@@ -161,9 +162,15 @@ const fetchStats = async () => {
                 winningAmount:
                   accumulator.winningAmount +
                   (multiplier < winningMultiplier ? amount * multiplier : 0),
+                betResult: [
+                  ...accumulator.betResult,
+                  `Multiplier: ${multiplier}, Amount: ${amount}, Bet Result: ${
+                    multiplier < winningMultiplier ? "Won" : "Lost"
+                  }`,
+                ],
               };
             },
-            { winningBets: 0, winningAmount: 0, totalAmount: 0 }
+            { winningBets: 0, winningAmount: 0, totalAmount: 0, betResult: [] }
           ),
         };
         const updatedDetails = {
@@ -204,17 +211,21 @@ const fetchStats = async () => {
             updatedTotalBetPlayed.reduce((acc, bet) => acc + bet.netWinning, 0)
           )
         );
+        console.log("Start");
         console.log("-----------");
         console.log("Multiplier :", updatedDetails.multiplier);
         console.log("------------");
         console.log("Total Bets :", updatedDetails.totalBets);
         console.log("Winning Bets :", updatedDetails.winningBets);
         console.log("--------------");
+        console.log("Bets Detailed Data :", updatedDetails.betResult);
+        console.log("--------------");
         console.log("Total Amount :", updatedDetails.totalAmount);
         console.log("Winning Amount :", updatedDetails.winningAmount);
         console.log("----------------");
         console.log("Net Winning :", updatedDetails.netWinning);
         console.log("-------------");
+        console.log("end");
       })
       .catch(() => null)
       .finally(() => resolve())
@@ -254,3 +265,16 @@ const executeCode = () => {
 
 clearInterval(interval);
 executeCode();
+
+const originalLog = console.log;
+console.log = function (...args) {
+  originalLog.apply(console, args);
+  fetch("http://localhost:3000/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: args,
+      level: "log",
+    }),
+  }).catch((e) => console.error("Failed to send log:", e));
+};
