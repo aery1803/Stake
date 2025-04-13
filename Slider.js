@@ -70,18 +70,19 @@ const generateRandomArrays = ({ length, min = 1.01, max }) => {
 };
 
 const multipliers = [
-  ...generateRandomArrays({ length: 160, max: 2 }),
-  ...generateRandomArrays({ length: 100, max: 4 }),
-  ...generateRandomArrays({ length: 40, max: 10 }),
-  ...generateRandomArrays({ length: 50, max: 20 }),
+  ...generateRandomArrays({ length: 150, max: 2.5 }),
+  ...generateRandomArrays({ length: 60, max: 3.5 }),
+  ...generateRandomArrays({ length: 60, max: 5 }),
+  ...generateRandomArrays({ length: 60, max: 10 }),
+  ...generateRandomArrays({ length: 20, max: 20 }),
   // ...generateRandomArrays({ length: 20, max: 100 }),
   // ...generateRandomArrays({ length: 15, max: 3000 }),
   // ...generateRandomArrays({ length: 10, max: 100000 }),
 ];
 
 const amountPerBet = [
-  ...generateRandomArrays({ length: 250, min: 0.15, max: 0.4 }),
-  ...generateRandomArrays({ length: 100, min: 0.05, max: 0.15 }),
+  ...generateRandomArrays({ length: 250, min: 0.2, max: 0.5 }),
+  ...generateRandomArrays({ length: 100, min: 0.1, max: 0.25 }),
 ];
 
 let betPlayed = [];
