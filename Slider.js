@@ -70,19 +70,19 @@ const generateRandomArrays = ({ length, min = 1.01, max }) => {
 };
 
 const multipliers = [
-  ...generateRandomArrays({ length: 150, max: 2.5 }),
-  ...generateRandomArrays({ length: 60, max: 3.5 }),
-  ...generateRandomArrays({ length: 60, max: 5 }),
-  ...generateRandomArrays({ length: 60, max: 10 }),
-  ...generateRandomArrays({ length: 20, max: 20 }),
+  ...generateRandomArrays({ length: 160, max: 2 }),
+  ...generateRandomArrays({ length: 70, max: 3.5 }),
+  ...generateRandomArrays({ length: 60, max: 4.8 }),
+  ...generateRandomArrays({ length: 50, max: 15 }),
+  ...generateRandomArrays({ length: 20, max: 1000 }),
   // ...generateRandomArrays({ length: 20, max: 100 }),
   // ...generateRandomArrays({ length: 15, max: 3000 }),
   // ...generateRandomArrays({ length: 10, max: 100000 }),
 ];
 
 const amountPerBet = [
-  ...generateRandomArrays({ length: 250, min: 0.2, max: 0.5 }),
-  ...generateRandomArrays({ length: 100, min: 0.1, max: 0.25 }),
+  ...generateRandomArrays({ length: 250, min: 0.1, max: 0.25 }),
+  ...generateRandomArrays({ length: 100, min: 0.05, max: 0.175 }),
 ];
 
 let betPlayed = [];
@@ -243,15 +243,15 @@ const executeCode = () => {
       .trim()
       .toLowerCase();
     if (data === "bet" && prevButtonText !== data) {
-      const randomNumber = generateRandomBet({ min: 1, max: 10, float: false });
-      if (randomNumber > 5) executeBets();
+      executeBets();
       prevButtonText = data;
     } else if (data === "bet (next round)" && prevButtonText !== data) {
       fetchStats();
       prevButtonText = data;
+      clearInterval(interval);
     }
   }, 1000);
 };
 
-clearInterval(interval);
+// clearInterval(interval);
 executeCode();
