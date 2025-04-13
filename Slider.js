@@ -235,5 +235,25 @@ const fetchStats = async () => {
   );
 };
 
-await executeBets();
-await fetchStats();
+let interval;
+let betDone = false;
+let prevButtonText = null;
+
+const executeCode = () => {
+  interval = setInterval(() => {
+    const data = document
+      .querySelector("button[data-test-bet-next]")
+      .textContent.toString()
+      .trim()
+      .toLowerCase();
+    if (data === "bet" && prevButtonText !== data) {
+      executeBets();
+      prevButtonText = data;
+    } else if (data === "bet (next round)" && prevButtonText !== data) {
+      fetchStats();
+      prevButtonText = data;
+    }
+  }, 1000);
+};
+
+clearInterval(interval);
