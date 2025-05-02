@@ -217,10 +217,9 @@ let netWinning = 0;
 const stopFunction = runAtRandomInterval(async () => {
   const data = await executeBets();
   netWinning = printResult(data);
+  if (netWinning < -50) {
+    stopFunction();
+  } else if (netWinning > 500) {
+    stopFunction();
+  }
 });
-
-if (netWinning < -50) {
-  stopFunction();
-} else if (netWinning > 500) {
-  stopFunction();
-}
