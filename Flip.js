@@ -1,3 +1,5 @@
+const aeryLaw = true;
+
 const headers = {
   accept: "*/*",
   "accept-language": "en-US,en;q=0.9,hi;q=0.8",
@@ -64,7 +66,7 @@ const generateIdentifier = (length) => {
 };
 
 const number = (number) => {
-  return Number(number.toFixed(2));
+  return Number(number.toFixed(3));
 };
 
 const generateRandomBet = ({ min, max, float = true }) => {
@@ -90,7 +92,7 @@ const recursiveMultiplier = (levels, index = 0) => {
 
 const executeBets = async () => {
   const flips = generateRandomBet({
-    ...recursiveMultiplier([3, 20]),
+    ...recursiveMultiplier([2, 20]),
     float: false,
   });
   const amount =
@@ -135,6 +137,56 @@ const executeBets = async () => {
     payout,
     flips,
     active: payout > 0,
+  };
+};
+
+let baseAmount = 0.175;
+
+const executeAeryLaw = async () => {
+  const flips = 2;
+  const amount = baseAmount;
+  const guesses = Array(flips)
+    .fill()
+    .map(() =>
+      generateRandomBet({ min: 1, max: 10, float: false }) % 2 === 0
+        ? "heads"
+        : "tails"
+    );
+
+  const response = await fetch("https://stake.ac/_api/graphql", {
+    headers,
+    referrer: "https://stake.ac/casino/games/pump",
+    referrerPolicy: "strict-origin-when-cross-origin",
+    body: JSON.stringify({
+      query:
+        "mutation FlipBet($amount: Float!, $currency: CurrencyEnum!, $identifier: String, $guesses: [FlipConditionEnum!]!) {\n  flipBet(\n    amount: $amount\n    currency: $currency\n    identifier: $identifier\n    guesses: $guesses\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGameFlip\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGameFlip on CasinoGameFlip {\n  currentRound\n  payoutMultiplier\n  playedRounds\n  flips\n}\n",
+      variables: {
+        amount: amount,
+        currency: "inr",
+        identifier: generateIdentifier(21),
+        guesses,
+      },
+    }),
+    method: "POST",
+    mode: "cors",
+    credentials: "include",
+  });
+
+  const data = await response.json();
+  const payout = number(data?.data?.flipBet?.payout) || 0;
+  const payoutMultiplier = number(data?.data?.flipBet?.payoutMultiplier) || 0;
+  const active = payout > 0;
+  if (aeryLaw && active) {
+    baseAmount = 0.175;
+  } else if (aeryLaw && !active) {
+    baseAmount = baseAmount * 1.6 > 20 ? 0.175 : number(baseAmount * 1.6);
+  }
+  return {
+    target: payoutMultiplier,
+    amount,
+    payout,
+    flips,
+    active,
   };
 };
 
@@ -189,7 +241,9 @@ const printResult = ({ active, payout, amount, target, flips }) => {
   console.log("----Winning : ", number(payout));
   console.log("----Target : ", target);
   console.log("----Flips : ", flips);
-  console.log("----Result : ", active ? "Win" : "Lose");
+  active
+    ? console.log("----Result : \x1B[32m Win")
+    : console.log("----Result : \x1B[31m Lose");
   console.log("-------------");
   console.log("Highest Bet : ");
   console.log("----Amount : ", highestBet.amount);
@@ -222,9 +276,9 @@ const runAtRandomInterval = (callback) => {
 
 let netWinning = 0;
 const stopFunction = runAtRandomInterval(async () => {
-  const data = await executeBets();
+  const data = aeryLaw ? await executeAeryLaw() : await executeBets();
   netWinning = printResult(data);
-  if (netWinning < -50) {
+  if (netWinning < -10 && !aeryLaw) {
     stopFunction();
   } else if (netWinning > 500) {
     stopFunction();
