@@ -1,4 +1,4 @@
-const aeryLaw = true;
+const aeryLaw = false;
 
 const headers = {
   accept: "*/*",
@@ -92,13 +92,11 @@ const recursiveMultiplier = (levels, index = 0) => {
 
 const executeBets = async () => {
   const flips = generateRandomBet({
-    ...recursiveMultiplier([2, 20]),
+    min: 1,
+    max: 20,
     float: false,
   });
-  const amount =
-    flips > 5
-      ? generateRandomBet({ min: 0.1, max: 0.5 })
-      : generateRandomBet({ min: 0.4, max: 0.75 });
+  const amount = generateRandomBet({ min: 0.25, max: 0.75 });
 
   const guesses = Array(flips)
     .fill()
@@ -179,7 +177,7 @@ const executeAeryLaw = async () => {
   if (aeryLaw && active) {
     baseAmount = 0.175;
   } else if (aeryLaw && !active) {
-    baseAmount = baseAmount * 1.6 > 20 ? 0.175 : number(baseAmount * 1.6);
+    baseAmount = baseAmount > 20 ? 0.175 : number(baseAmount * 1.6);
   }
   return {
     target: payoutMultiplier,
@@ -205,6 +203,11 @@ let highestBet = {
   payout: 0,
 };
 
+let winStreak = 0;
+let loseStreak = 0;
+let highstWinStreak = 0;
+let highestLoseStreak = 0;
+
 const printResult = ({ active, payout, amount, target, flips }) => {
   const totalBets = betDetails.totalBets + 1;
   const betsWin = betDetails.betsWin + (active ? 1 : 0);
@@ -215,7 +218,15 @@ const printResult = ({ active, payout, amount, target, flips }) => {
   );
   const winRate = number((betsWin / totalBets) * 100);
   const netWinning = number(winningAmount - totalAmount);
-
+  if (active) {
+    winStreak += 1;
+    loseStreak = 0;
+  } else {
+    loseStreak += 1;
+    winStreak = 0;
+  }
+  highstWinStreak = Math.max(highstWinStreak, winStreak);
+  highestLoseStreak = Math.max(highestLoseStreak, loseStreak);
   betDetails = { totalBets, betsWin, betsLose, totalAmount, winningAmount };
   if (payout > highestBet.payout) {
     highestBet.target = target;
@@ -234,22 +245,29 @@ const printResult = ({ active, payout, amount, target, flips }) => {
   console.log("Total Amount : ", totalAmount);
   console.log("Winning Amount : ", winningAmount);
   console.log("----------------");
-  console.log("Net Winning : ", netWinning);
+  console.log(
+    `Net Winning : ${netWinning > 0 ? "\x1B[32m" : "\x1B[31m"}${netWinning}`
+  );
   console.log("-------------");
   console.log("Recent Bet : ");
   console.log("----Amount : ", number(amount));
-  console.log("----Winning : ", number(payout));
   console.log("----Target : ", target);
   console.log("----Flips : ", flips);
-  active
-    ? console.log("----Result : \x1B[32m Win")
-    : console.log("----Result : \x1B[31m Lose");
+  console.log("----Winning : ", number(payout));
+  console.log(
+    `----Result : ${active ? "\x1B[32m" : "\x1B[31m"}${active ? "Win" : "Lose"}`
+  );
   console.log("-------------");
   console.log("Highest Bet : ");
   console.log("----Amount : ", highestBet.amount);
   console.log("----Target : ", highestBet.target);
   console.log("----Flips : ", highestBet.flips);
   console.log("----Winning : ", highestBet.payout);
+  console.log("-------------");
+  console.log("----Win Streak : ", winStreak);
+  console.log("----Lose Streak : ", loseStreak);
+  console.log("----Highest Win Streak : ", highstWinStreak);
+  console.log("----Highest Lose Streak : ", highestLoseStreak);
   console.log("-------------");
   return netWinning;
 };
@@ -258,7 +276,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 1000, max: 5000 });
+    const randomDelay = generateRandomBet({ min: 1000, max: 4000 });
     timeoutId = setTimeout(() => {
       callback();
       start();
@@ -278,7 +296,7 @@ let netWinning = 0;
 const stopFunction = runAtRandomInterval(async () => {
   const data = aeryLaw ? await executeAeryLaw() : await executeBets();
   netWinning = printResult(data);
-  if (netWinning < -10 && !aeryLaw) {
+  if (netWinning < -1000 && !aeryLaw) {
     stopFunction();
   } else if (netWinning > 500) {
     stopFunction();

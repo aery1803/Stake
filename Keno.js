@@ -182,13 +182,19 @@ const printResult = ({ active, payout, amount, target }) => {
   console.log("Total Amount : ", totalAmount);
   console.log("Winning Amount : ", winningAmount);
   console.log("----------------");
-  console.log("Net Winning : ", netWinning);
-  console.log("-------------");
-  console.log("Recent Bet : ");
-  console.log("----Amount : ", amount);
-  console.log("----Target : ", target);
-  console.log("----Winning : ", number(payout));
-  console.log("----Result : ", active ? "Win" : "Lose");
+   console.log(
+     `Net Winning : ${netWinning > 0 ? "\x1B[32m" : "\x1B[31m"}${netWinning}`
+   );
+   console.log("-------------");
+   console.log("Recent Bet : ");
+   console.log("----Amount : ", amount);
+   console.log("----Target : ", target);
+   console.log("----Winning : ", number(payout));
+   console.log(
+     `----Result : ${active ? "\x1B[32m" : "\x1B[31m"}${
+       active ? "Win" : "Lose"
+     }`
+   );
   console.log("-------------");
   console.log("Highest Bet : ");
   console.log("----Amount : ", highestBet.amount);

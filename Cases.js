@@ -4,19 +4,22 @@ const headers = {
   "content-type": "application/json",
   priority: "u=1, i",
   "sec-ch-ua":
-    '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+    '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
   "sec-ch-ua-arch": '"x86"',
   "sec-ch-ua-bitness": '"64"',
-  "sec-ch-ua-full-version": '"132.0.6834.84"',
+  "sec-ch-ua-full-version": '"136.0.7103.48"',
   "sec-ch-ua-full-version-list":
-    '"Not A(Brand";v="8.0.0.0", "Chromium";v="132.0.6834.84", "Google Chrome";v="132.0.6834.84"',
+    '"Chromium";v="136.0.7103.48", "Google Chrome";v="136.0.7103.48", "Not.A/Brand";v="99.0.0.0"',
   "sec-ch-ua-mobile": "?0",
   "sec-ch-ua-model": '""',
   "sec-ch-ua-platform": '"Windows"',
-  "sec-ch-ua-platform-version": '"10.0.0"',
+  "sec-ch-ua-platform-version": '"19.0.0"',
   "sec-fetch-dest": "empty",
   "sec-fetch-mode": "cors",
   "sec-fetch-site": "same-origin",
+  "x-lockdown-token": "s5MNWtjTM5TvCMkAzxov",
+  Referer: "https://stake.ac/casino/games/flip",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
   "x-access-token": getCookie("session"),
   cookie: document.cookie,
 };
@@ -69,56 +72,41 @@ const generateRandomBet = ({ min, max, float = true }) => {
   return float ? number(randomNumber) : Math.ceil(randomNumber);
 };
 
-const recursiveMultiplier = (levels, index = 0) => {
-  if (index >= levels.length - 1) {
-    return { min: levels[index], max: levels[index] };
-  }
-
-  const nextMultiplier = recursiveMultiplier(levels, index + 1);
-
-  return {
-    min: levels[index],
-    max: generateRandomBet({
-      min: 1.1,
-      max: [7, 9, 11, 13, 18].includes(Math.floor(Math.random() * 20) + 1)
-        ? nextMultiplier.max
-        : nextMultiplier.min,
-    }),
-  };
-};
-
-const randomMultiplier = (levels, float = true) => {
-  return generateRandomBet({ ...recursiveMultiplier(levels), float });
-};
-
 const executeBets = async () => {
-  const target = randomMultiplier([2, 7, 50, 1000, 1000000]);
-  const amount =
-    target > 3
-      ? generateRandomBet({ min: 0.1, max: 0.5 })
-      : generateRandomBet({ min: 0.4, max: 0.99 });
+  const amount = generateRandomBet({ min: 0.4, max: 1 });
+  const mode = generateRandomBet({
+    min: 1,
+    max: 4,
+    float: false,
+  });
+  const difficulty = ["easy", "medium", "hard", "expert"][mode - 1];
 
-  const response = await fetch("https://stake.ac/_api/graphql", {
+  const response = await fetch("https://stake.ac/_api/casino/cases/bet", {
     headers,
-    referrer: "https://stake.ac/casino/games/limbo",
+    referrer: "https://stake.ac/casino/games/cases",
     referrerPolicy: "strict-origin-when-cross-origin",
     body: JSON.stringify({
-      query:
-        "mutation LimboBet($amount: Float!, $multiplierTarget: Float!, $currency: CurrencyEnum!, $identifier: String!) {\n  limboBet(\n    amount: $amount\n    currency: $currency\n    multiplierTarget: $multiplierTarget\n    identifier: $identifier\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGameLimbo\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGameLimbo on CasinoGameLimbo {\n  result\n  multiplierTarget\n}\n",
-      variables: {
-        multiplierTarget: target,
-        identifier: generateIdentifier(21),
-        amount,
-        currency: "inr",
-      },
+      amount: amount,
+      currency: "inr",
+      identifier: generateIdentifier(21),
+      difficulty,
     }),
     method: "POST",
     mode: "cors",
     credentials: "include",
   });
+
   const data = await response.json();
-  const payout = number(data?.data?.limboBet?.payout) || 0;
-  return { target, amount, payout, active: payout > 0 };
+  const payout = number(data?.casesBet?.payout);
+  const payoutMultiplier = number(data?.casesBet?.payoutMultiplier);
+
+  return {
+    target: payoutMultiplier,
+    amount,
+    payout,
+    active: payout > amount,
+    difficulty,
+  };
 };
 
 let betDetails = {
@@ -133,16 +121,20 @@ let highestBet = {
   target: 0,
   amount: 0,
   payout: 0,
+  difficulty: "",
 };
 
-const printResult = ({ active, payout, amount, target }) => {
+let winStreak = 0;
+let loseStreak = 0;
+let highstWinStreak = 0;
+let highestLoseStreak = 0;
+
+const printResult = ({ active, payout, amount, target, difficulty }) => {
   const totalBets = betDetails.totalBets + 1;
   const betsWin = betDetails.betsWin + (active ? 1 : 0);
   const betsLose = totalBets - betsWin;
   const totalAmount = number(betDetails.totalAmount + amount);
-  const winningAmount = number(
-    betDetails.winningAmount + (active ? payout : 0)
-  );
+  const winningAmount = number(betDetails.winningAmount + payout);
   const winRate = number((betsWin / totalBets) * 100);
   const netWinning = number(winningAmount - totalAmount);
 
@@ -151,7 +143,18 @@ const printResult = ({ active, payout, amount, target }) => {
     highestBet.target = target;
     highestBet.amount = amount;
     highestBet.payout = number(payout);
+    highestBet.difficulty = difficulty;
   }
+  if (active) {
+    winStreak += 1;
+    loseStreak = 0;
+  } else {
+    loseStreak += 1;
+    winStreak = 0;
+  }
+  highstWinStreak = Math.max(highstWinStreak, winStreak);
+  highestLoseStreak = Math.max(highestLoseStreak, loseStreak);
+
   console.clear();
   console.log("--------------------");
   console.log("Total Bets : ", totalBets);
@@ -168,9 +171,10 @@ const printResult = ({ active, payout, amount, target }) => {
   );
   console.log("-------------");
   console.log("Recent Bet : ");
-  console.log("----Amount : ", amount);
+  console.log("----Amount : ", number(amount));
   console.log("----Target : ", target);
   console.log("----Winning : ", number(payout));
+  console.log("----Difficulty : ", difficulty);
   console.log(
     `----Result : ${active ? "\x1B[32m" : "\x1B[31m"}${active ? "Win" : "Lose"}`
   );
@@ -179,6 +183,12 @@ const printResult = ({ active, payout, amount, target }) => {
   console.log("----Amount : ", highestBet.amount);
   console.log("----Target : ", highestBet.target);
   console.log("----Winning : ", highestBet.payout);
+  console.log("----Difficulty : ", highestBet.difficulty);
+  console.log("-------------");
+  console.log("----Win Streak : ", winStreak);
+  console.log("----Lose Streak : ", loseStreak);
+  console.log("----Highest Win Streak : ", highstWinStreak);
+  console.log("----Highest Lose Streak : ", highestLoseStreak);
   console.log("-------------");
   return netWinning;
 };
@@ -187,7 +197,7 @@ const runAtRandomInterval = (callback) => {
   let timeoutId;
 
   const start = () => {
-    const randomDelay = generateRandomBet({ min: 1000, max: 5000 });
+    const randomDelay = generateRandomBet({ min: 1000, max: 1500 });
     timeoutId = setTimeout(() => {
       callback();
       start();
@@ -207,10 +217,9 @@ let netWinning = 0;
 const stopFunction = runAtRandomInterval(async () => {
   const data = await executeBets();
   netWinning = printResult(data);
+  if (netWinning < -50) {
+    stopFunction();
+  } else if (netWinning > 500) {
+    stopFunction();
+  }
 });
-
-if (netWinning < -50) {
-  stopFunction();
-} else if (netWinning > 500) {
-  stopFunction();
-}
