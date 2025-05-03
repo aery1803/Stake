@@ -1,16 +1,25 @@
 const headers = {
+  accept: "*/*",
+  "accept-language": "en-US,en;q=0.9,hi;q=0.8",
   "content-type": "application/json",
+  priority: "u=1, i",
   "sec-ch-ua":
-    '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+    '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
   "sec-ch-ua-arch": '"x86"',
   "sec-ch-ua-bitness": '"64"',
-  "sec-ch-ua-full-version": '"132.0.6834.84"',
+  "sec-ch-ua-full-version": '"136.0.7103.48"',
   "sec-ch-ua-full-version-list":
-    '"Not A(Brand";v="8.0.0.0", "Chromium";v="132.0.6834.84", "Google Chrome";v="132.0.6834.84"',
+    '"Chromium";v="136.0.7103.48", "Google Chrome";v="136.0.7103.48", "Not.A/Brand";v="99.0.0.0"',
   "sec-ch-ua-mobile": "?0",
   "sec-ch-ua-model": '""',
   "sec-ch-ua-platform": '"Windows"',
-  "sec-ch-ua-platform-version": '"10.0.0"',
+  "sec-ch-ua-platform-version": '"19.0.0"',
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "x-lockdown-token": "s5MNWtjTM5TvCMkAzxov",
+  Referer: "https://stake.ac/casino/games/flip",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
   "x-access-token": getCookie("session"),
   cookie: document.cookie,
 };
@@ -26,10 +35,6 @@ function getCookie(name) {
   }
   return null;
 }
-
-const number = (number) => {
-  return Number(number.toFixed(2));
-};
 
 const generateIdentifier = (length) => {
   const characters =
@@ -58,6 +63,10 @@ const generateIdentifier = (length) => {
   return result;
 };
 
+const number = (number) => {
+  return Number(number.toFixed(2));
+};
+
 const generateRandomBet = ({ min, max, float = true }) => {
   const randomNumber = Math.random() * (max - min) + min;
   return float ? number(randomNumber) : Math.ceil(randomNumber);
@@ -78,53 +87,60 @@ const recursiveMultiplier = (levels, index = 0) => {
 };
 
 const executeBets = async () => {
-  const pump = generateRandomBet({
-    ...recursiveMultiplier([3, 8, 20]),
-    float: false,
-  });
-  const amount =
-    pump > 3
-      ? generateRandomBet({ min: 0.4, max: 0.75 })
-      : generateRandomBet({ min: 0.75, max: 1 });
-
   const mode = generateRandomBet({
-    ...recursiveMultiplier([0, 4]),
+    ...recursiveMultiplier([0, 5]),
     float: false,
   });
-
-  const difficulty = ["easy", "medium", "hard", "expert"][mode - 1];
-
-  const response = await fetch("https://stake.ac/_api/graphql", {
-    headers,
-    referrer: "https://stake.ac/casino/games/pump",
-    referrerPolicy: "strict-origin-when-cross-origin",
-    body: JSON.stringify({
-      query:
-        "mutation PumpBet($amount: Float!, $difficulty: CasinoGamePumpDifficultyEnum!, $currency: CurrencyEnum!, $identifier: String, $round: Int!) {\n  pumpBet(\n    amount: $amount\n    difficulty: $difficulty\n    currency: $currency\n    identifier: $identifier\n    round: $round\n  ) {\n    ...CasinoBet\n    state {\n      ...CasinoGamePump\n    }\n  }\n}\n\nfragment CasinoBet on CasinoBet {\n  id\n  active\n  payoutMultiplier\n  amountMultiplier\n  amount\n  payout\n  updatedAt\n  currency\n  game\n  user {\n    id\n    name\n  }\n}\n\nfragment CasinoGamePump on CasinoGamePump {\n  difficulty\n  payoutMultiplier\n  round\n}\n",
-      variables: {
+  const amount = [2, 3].includes(mode)
+    ? generateRandomBet({ min: 0.4, max: 0.75 })
+    : generateRandomBet({ min: 0.75, max: 1 });
+  const difficulty = ["easy", "medium", "hard", "expert", "master"][mode - 1];
+  const levels = [4, 3, 2, 3, 4];
+  const eggs = Array(
+    generateRandomBet({
+      min: 1,
+      max: generateRandomBet({
+        ...recursiveMultiplier([mode === 1 ? 8 : mode > 3 ? 3 : 5, 10]),
+        float: false,
+      }),
+      float: false,
+    })
+  )
+    .fill()
+    .map(
+      () =>
+        generateRandomBet({ min: 0, max: levels[mode - 1], float: false }) - 1
+    );
+  const response = await fetch(
+    "https://stake.ac/_api/casino/dragon-tower/bet",
+    {
+      headers,
+      referrer: "https://stake.ac/casino/games/dragon-tower",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      body: JSON.stringify({
         amount: amount,
         currency: "inr",
         identifier: generateIdentifier(21),
-        round: pump,
         difficulty,
-      },
-    }),
-    method: "POST",
-    mode: "cors",
-    credentials: "include",
-  });
+        eggs,
+      }),
+      method: "POST",
+      mode: "cors",
+      credentials: "include",
+    }
+  );
 
   const data = await response.json();
-  const payout = number(data?.data?.pumpBet?.payout) || 0;
-  const payoutMultiplier = number(data?.data?.pumpBet?.payoutMultiplier) || 0;
+  const payout = number(data?.dragonTowerBet?.payout);
+  const payoutMultiplier = number(data?.dragonTowerBet?.payoutMultiplier);
 
   return {
     target: payoutMultiplier,
     amount,
     payout,
-    pump,
-    active: payout > 0,
+    active: payout > amount,
     difficulty,
+    eggs,
   };
 };
 
@@ -137,11 +153,11 @@ let betDetails = {
 };
 
 let highestBet = {
-  amount: 0,
   target: 0,
+  amount: 0,
   payout: 0,
-  pump: 0,
   difficulty: "",
+  eggs: [],
 };
 
 let winStreak = 0;
@@ -158,12 +174,12 @@ let winRate = 0;
 let netWinning = 0;
 let bestWinnings = [];
 
-const printResult = ({ active, payout, amount, target, difficulty, pump }) => {
+const printResult = ({ active, payout, amount, target, difficulty, eggs }) => {
   totalBets = betDetails.totalBets + 1;
   betsWin = betDetails.betsWin + (active ? 1 : 0);
   betsLose = totalBets - betsWin;
   totalAmount = number(betDetails.totalAmount + amount);
-  winningAmount = number(betDetails.winningAmount + (active ? payout : 0));
+  winningAmount = number(betDetails.winningAmount + payout);
   winRate = number((betsWin / totalBets) * 100);
   netWinning = number(winningAmount - totalAmount);
 
@@ -173,7 +189,7 @@ const printResult = ({ active, payout, amount, target, difficulty, pump }) => {
     highestBet.amount = amount;
     highestBet.payout = number(payout);
     highestBet.difficulty = difficulty;
-    highestBet.pump = pump;
+    highestBet.eggs = eggs;
   }
   if (payout > 5)
     bestWinnings.push({ amount, target, payout, difficulty, eggs });
@@ -204,10 +220,10 @@ const printResult = ({ active, payout, amount, target, difficulty, pump }) => {
   console.log("--------------------");
   console.log("Recent Bet : ");
   console.log("----Amount : ", number(amount));
-  console.log("----Winning : ", number(payout));
   console.log("----Target : ", target);
-  console.log("----Pump : ", pump);
+  console.log("----Winning : ", number(payout));
   console.log("----Difficulty : ", difficulty);
+  console.log("----Eggs : ", eggs);
   console.log(
     `----Result : ${active ? "\x1B[32m" : "\x1B[31m"}${active ? "Win" : "Lose"}`
   );
@@ -217,8 +233,7 @@ const printResult = ({ active, payout, amount, target, difficulty, pump }) => {
   console.log("----Target : ", highestBet.target);
   console.log("----Winning : ", highestBet.payout);
   console.log("----Difficulty : ", highestBet.difficulty);
-  console.log("----Pump : ", highestBet.pump);
-  console.log("--------------------");
+  console.log("----Eggs : ", highestBet.eggs);
   console.log("--------------------");
   console.log("----Win Streak : ", winStreak);
   console.log("----Lose Streak : ", loseStreak);
@@ -230,7 +245,7 @@ const printResult = ({ active, payout, amount, target, difficulty, pump }) => {
 
 const downloadStats = () => {
   const stats = `
-  Game Name: Pump
+  Game Name: Dragon Tower
   --------------------
   Total Bets: ${totalBets}
   Bets Win: ${betsWin}
@@ -244,7 +259,7 @@ const downloadStats = () => {
     - Target: ${highestBet.target}
     - Winning: ${highestBet.payout}
     - Difficulty: ${highestBet.difficulty}
-    - Pump: ${highestBet.pump}
+    - Eggs: ${highestBet.eggs.join(", ")}
   Streaks:
     - Current Win Streak: ${winStreak}
     - Current Lose Streak: ${loseStreak}
@@ -260,7 +275,7 @@ const downloadStats = () => {
       - Target: ${win.target}
       - Winning: ${win.payout}
       - Difficulty: ${win.difficulty}
-      - Pump: ${win.pump}
+      - Eggs: ${win.eggs.join(", ")}
     `
       )
       .join("\n")}
@@ -269,7 +284,7 @@ const downloadStats = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "pump_stats.txt";
+  a.download = "dragon_tower_stats.txt";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
